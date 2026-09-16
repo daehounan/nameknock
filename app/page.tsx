@@ -202,7 +202,8 @@ export default function Home() {
               id="disclaimer-heading"
               className="mt-3 max-w-2xl text-3xl tracking-tight text-foreground"
             >
-              Public signals only. No attorney opinion. No auto-filing.
+              Public signals only. No attorney opinion.{' '}
+              <span className="whitespace-nowrap">No auto-filing.</span>
             </h2>
             <p className="mt-5 max-w-2xl text-base leading-7 text-muted">
               NameKnock does not replace a trademark search by counsel. It does

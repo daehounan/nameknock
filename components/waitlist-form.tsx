@@ -140,7 +140,7 @@ export function WaitlistForm() {
       {status.state === "success" ? (
         <div className="border border-ink bg-panel px-6 py-8 sm:px-8">
           <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-pass">
-            Waitlist · in
+            Waitlist · confirmed
           </p>
           <h3
             ref={successHeadingRef}
