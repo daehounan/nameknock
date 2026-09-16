@@ -48,7 +48,7 @@ export function KnockoutPreview() {
           <li key={row.name} className="grid gap-2 px-4 py-4 sm:grid-cols-[7.5rem_5.5rem_1fr] sm:items-start sm:gap-4 sm:px-5">
             <p className="font-mono text-sm text-foreground">{row.name}</p>
             <p
-              className={`w-fit border px-2 py-0.5 font-mono text-[0.68rem] uppercase tracking-[0.14em] ${verdictClass[row.verdict]}`}
+              className={`w-fit border px-2 py-1 font-mono text-[0.75rem] uppercase tracking-[0.14em] ${verdictClass[row.verdict]}`}
             >
               {verdictLabel[row.verdict]}
             </p>

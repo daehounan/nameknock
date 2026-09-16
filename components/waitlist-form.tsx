@@ -4,6 +4,9 @@ import { FormEvent, useEffect, useId, useRef, useState } from "react";
 import {
   PRODUCT_KIND_OPTIONS,
   SCREEN_VOLUME_OPTIONS,
+  isValidEmail,
+  parseProductKind,
+  parseScreenVolume,
   type ProductKind,
   type ScreenVolume,
 } from "@/lib/waitlist";
@@ -12,11 +15,30 @@ type Status =
   | { state: "idle" }
   | { state: "submitting" }
   | { state: "success" }
-  | { state: "error"; message: string };
+  | { state: "error"; message: string; field?: "email" };
+
+type WaitlistResponse = {
+  ok?: boolean;
+  error?: string;
+};
+
+function readWaitlistResponse(payload: unknown): WaitlistResponse | null {
+  if (typeof payload !== "object" || payload === null) {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+  return {
+    ok: typeof record.ok === "boolean" ? record.ok : undefined,
+    error: typeof record.error === "string" ? record.error : undefined,
+  };
+}
 
 export function WaitlistForm() {
   const formId = useId();
   const successHeadingRef = useRef<HTMLHeadingElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const submittingRef = useRef(false);
   const [email, setEmail] = useState("");
   const [productKind, setProductKind] = useState<ProductKind | "">("");
   const [screenVolume, setScreenVolume] = useState<ScreenVolume | "">("");
@@ -26,17 +48,41 @@ export function WaitlistForm() {
     if (status.state === "success") {
       successHeadingRef.current?.focus();
     }
+
+    if (status.state === "error" && status.field === "email") {
+      emailRef.current?.focus();
+    }
   }, [status]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submittingRef.current) {
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setStatus({ state: "error", message: "Email is required.", field: "email" });
+      return;
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      setStatus({
+        state: "error",
+        message: "Enter a valid email address.",
+        field: "email",
+      });
+      return;
+    }
+
+    submittingRef.current = true;
     setStatus({ state: "submitting" });
 
     const payload: {
       email: string;
       productKind?: ProductKind;
       screenVolume?: ScreenVolume;
-    } = { email };
+    } = { email: trimmedEmail };
 
     if (productKind) {
       payload.productKind = productKind;
@@ -51,56 +97,58 @@ export function WaitlistForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10_000),
       });
 
-      const body = (await response.json().catch(() => null)) as
-        | { ok?: boolean; error?: string }
-        | null;
+      const body = readWaitlistResponse(await response.json().catch(() => null));
 
       if (!response.ok || !body?.ok) {
+        const message = body?.error ?? "Something went wrong. Try again.";
         setStatus({
           state: "error",
-          message: body?.error ?? "Something went wrong. Try again.",
+          message,
+          field: message.toLowerCase().includes("email") ? "email" : undefined,
         });
         return;
       }
 
       setStatus({ state: "success" });
-    } catch {
+    } catch (error) {
+      const timedOut =
+        error instanceof DOMException &&
+        (error.name === "TimeoutError" || error.name === "AbortError");
       setStatus({
         state: "error",
-        message: "Network error. Check your connection and try again.",
+        message: timedOut
+          ? "That took too long. Try again."
+          : "Network error. Check your connection and try again.",
       });
+    } finally {
+      submittingRef.current = false;
     }
   }
 
   const busy = status.state === "submitting";
   const errorMessage = status.state === "error" ? status.message : "";
-  const emailInvalid = errorMessage.toLowerCase().includes("email");
+  const emailInvalid = status.state === "error" && status.field === "email";
 
   const selectClassName =
     "field-select mt-2 w-full cursor-pointer appearance-none border border-line bg-background px-3 py-2.5 pr-10 text-sm text-foreground outline-none transition focus-visible:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
-    <div id="waitlist">
-      <p className="sr-only" aria-live="polite" aria-atomic="true">
-        {status.state === "success"
-          ? "You’re on the NameKnock waitlist. We’ll email you when knockout screens open."
-          : errorMessage}
-      </p>
-
+    <div id="waitlist" tabIndex={-1} className="scroll-mt-4 outline-none">
       {status.state === "success" ? (
         <div className="border border-ink bg-panel px-6 py-8 sm:px-8">
           <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-pass">
             Waitlist · in
           </p>
-          <h2
+          <h3
             ref={successHeadingRef}
             tabIndex={-1}
             className="mt-3 text-2xl tracking-tight text-foreground outline-none"
           >
             You’re on the list.
-          </h2>
+          </h3>
           <p className="mt-3 text-sm leading-6 text-muted">
             We’ll email you when NameKnock opens for early knockout screens. No
             checkout, no filing, no attorney opinions — just the queue.
@@ -111,13 +159,17 @@ export function WaitlistForm() {
           onSubmit={onSubmit}
           className="border border-ink bg-panel px-6 py-7 sm:px-8 sm:py-8"
           noValidate
+          aria-labelledby={`${formId}-title`}
         >
           <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-accent">
             Early access
           </p>
-          <p className="mt-2 text-2xl tracking-tight text-foreground">
+          <h3
+            id={`${formId}-title`}
+            className="mt-2 text-2xl tracking-tight text-foreground"
+          >
             Join the knockout waitlist.
-          </p>
+          </h3>
           <p className="mt-2 text-sm leading-6 text-muted">
             Email is enough. Optional context helps us build the first screen
             around how you actually name products.
@@ -128,6 +180,7 @@ export function WaitlistForm() {
               Email <span className="text-accent">*</span>
             </label>
             <input
+              ref={emailRef}
               id={`${formId}-email`}
               name="email"
               type="email"
@@ -137,7 +190,11 @@ export function WaitlistForm() {
               onChange={(event) => setEmail(event.target.value)}
               disabled={busy}
               aria-invalid={emailInvalid || undefined}
-              aria-describedby={emailInvalid ? `${formId}-error` : undefined}
+              aria-describedby={
+                emailInvalid
+                  ? `${formId}-error`
+                  : `${formId}-privacy`
+              }
               className="mt-2 w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground outline-none transition placeholder:text-muted/70 focus-visible:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
               placeholder="you@studio.dev"
             />
@@ -151,9 +208,7 @@ export function WaitlistForm() {
               id={`${formId}-kind`}
               name="productKind"
               value={productKind}
-              onChange={(event) =>
-                setProductKind(event.target.value as ProductKind | "")
-              }
+              onChange={(event) => setProductKind(parseProductKind(event.target.value))}
               disabled={busy}
               className={selectClassName}
             >
@@ -175,9 +230,7 @@ export function WaitlistForm() {
               id={`${formId}-volume`}
               name="screenVolume"
               value={screenVolume}
-              onChange={(event) =>
-                setScreenVolume(event.target.value as ScreenVolume | "")
-              }
+              onChange={(event) => setScreenVolume(parseScreenVolume(event.target.value))}
               disabled={busy}
               className={selectClassName}
             >
@@ -203,6 +256,10 @@ export function WaitlistForm() {
           >
             {busy ? "Joining…" : "Join the waitlist"}
           </button>
+          <p id={`${formId}-privacy`} className="mt-3 text-xs leading-5 text-muted">
+            We’ll only email you when knockout screens open. No legal advice, no
+            list-selling.
+          </p>
         </form>
       )}
     </div>

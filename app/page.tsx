@@ -81,7 +81,7 @@ export default function Home() {
           </a>
           <a
             href="#waitlist"
-            className="text-sm text-muted transition hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-h-11 items-center px-2 text-sm text-muted transition hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             Join waitlist
           </a>
@@ -214,16 +214,16 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-ink text-panel">
+        <section aria-labelledby="waitlist-heading" className="bg-ink text-panel">
           <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start lg:gap-16 lg:py-20">
             <div>
-              <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[#f0b4b0]">
+              <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-on-ink-accent">
                 Waitlist
               </p>
-              <h2 className="mt-3 text-3xl tracking-tight">
+              <h2 id="waitlist-heading" className="mt-3 text-3xl tracking-tight">
                 Get in before the first knockout screens open.
               </h2>
-              <p className="mt-4 max-w-md text-base leading-7 text-[#cfc8bb]">
+              <p className="mt-4 max-w-md text-base leading-7 text-on-ink-muted">
                 Indie founders who are tired of naming in the dark. We will
                 email you when NameKnock can take a shortlist.
               </p>

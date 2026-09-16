@@ -9,11 +9,13 @@
   --panel: #fffcf7;
   --line: #d9d2c4;
   --ink: #14151a;
-  --pass: #1f7a4d;
-  --caution: #9a6700;
+  --pass: #17633e;
+  --caution: #7a5200;
   --fail: #c81e1e;
   --danger: #a81818;
   --stamp: #ece6d8;
+  --on-ink-muted: #cfc8bb;
+  --on-ink-accent: #f0b4b0;
 }
 
 @theme inline {
@@ -30,6 +32,8 @@
   --color-fail: var(--fail);
   --color-danger: var(--danger);
   --color-stamp: var(--stamp);
+  --color-on-ink-muted: var(--on-ink-muted);
+  --color-on-ink-accent: var(--on-ink-accent);
   --font-sans: var(--font-space-grotesk);
   --font-mono: var(--font-ibm-plex-mono);
 }

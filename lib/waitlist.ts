@@ -21,18 +21,38 @@ export type WaitlistEntry = {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PRODUCT_KIND_VALUES = new Set<string>(
+const PRODUCT_KIND_VALUES = new Set<ProductKind>(
   PRODUCT_KIND_OPTIONS.map((option) => option.value),
 );
-const SCREEN_VOLUME_VALUES = new Set<string>(
+const SCREEN_VOLUME_VALUES = new Set<ScreenVolume>(
   SCREEN_VOLUME_OPTIONS.map((option) => option.value),
 );
 
-function optionalChoice(
+export function isValidEmail(email: string): boolean {
+  return EMAIL_PATTERN.test(email) && email.length <= 254;
+}
+
+function isProductKind(value: string): value is ProductKind {
+  return PRODUCT_KIND_VALUES.has(value as ProductKind);
+}
+
+function isScreenVolume(value: string): value is ScreenVolume {
+  return SCREEN_VOLUME_VALUES.has(value as ScreenVolume);
+}
+
+export function parseProductKind(value: string): ProductKind | "" {
+  return isProductKind(value) ? value : "";
+}
+
+export function parseScreenVolume(value: string): ScreenVolume | "" {
+  return isScreenVolume(value) ? value : "";
+}
+
+function optionalChoice<T extends string>(
   raw: unknown,
-  allowed: Set<string>,
+  allowed: Set<T>,
   error: string,
-): { value?: string; error?: string } {
+): { value?: T; error?: string } {
   if (raw === undefined || raw === null || raw === "") {
     return {};
   }
@@ -46,11 +66,11 @@ function optionalChoice(
     return {};
   }
 
-  if (!allowed.has(value)) {
+  if (!allowed.has(value as T)) {
     return { error };
   }
 
-  return { value };
+  return { value: value as T };
 }
 
 export function parseWaitlistEntry(input: unknown): WaitlistEntry | { error: string } {
@@ -65,7 +85,7 @@ export function parseWaitlistEntry(input: unknown): WaitlistEntry | { error: str
     return { error: "Email is required." };
   }
 
-  if (!EMAIL_PATTERN.test(emailRaw) || emailRaw.length > 254) {
+  if (!isValidEmail(emailRaw)) {
     return { error: "Enter a valid email address." };
   }
 
@@ -93,11 +113,11 @@ export function parseWaitlistEntry(input: unknown): WaitlistEntry | { error: str
   };
 
   if (productKind.value) {
-    entry.productKind = productKind.value as ProductKind;
+    entry.productKind = productKind.value;
   }
 
   if (screenVolume.value) {
-    entry.screenVolume = screenVolume.value as ScreenVolume;
+    entry.screenVolume = screenVolume.value;
   }
 
   return entry;
